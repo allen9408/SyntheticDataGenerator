@@ -57,6 +57,8 @@
     + `%M`: 分钟
     + `%S`: 秒
     + 更多详情查看[官网](https://docs.python.org/3.6/library/datetime.html#strftime-and-strptime-behavior)
++ 输出顺序序号
+  + 所有列将根据序号升序排序输出
 
 #### 2.2 运行函数 -- 带参数
 
