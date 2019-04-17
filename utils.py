@@ -22,6 +22,12 @@ def calculate(l, op, d):
     if op == 'SUM[':
         return sum(elements)
 
+def parse_rules_str(rules, d):
+    rules = rules.replace(' ', '')
+    rules = rules.split('+')
+    result = [str(d.get(r, r)) for r in rules]
+    return ''.join(result)
+
 def parse_rules(rules, d):
     stack = []
     rules = rules.replace(' ', '')

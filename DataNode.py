@@ -8,7 +8,7 @@ import random
 import re
 import sys
 
-from utils import parse_rules
+from utils import parse_rules, parse_rules_str
 
 digits = '0123456789'
 lower_letters = 'abcdefghijklmnopqrstuvwxyz'
@@ -57,7 +57,7 @@ class dnode():
             return self._generate_by_rule(d)
 
         ret_val = self._generate_by_logic()
-        if 'SET' in self.Logic:
+        if 'DISTINCT' in self.Logic:
             attemp = 0
             while attemp < MAX_RETRY and ret_val in self.generated_value:
                 ret_val = self._generate_by_logic()
@@ -68,6 +68,8 @@ class dnode():
         return ret_val
 
     def _generate_by_rule(self, d):
+        if self.Type == 'CHAR':
+            return parse_rules_str(self.Rules, d)
         return parse_rules(self.Rules, d)
 
     def _generate_by_logic(self):
@@ -165,7 +167,7 @@ class dnode_STR(dnode):
 
     def _get_range(self):
         if not self.Range:
-            self.min, self.max = 0, sys.maxsize
+            self.min, self.max = 0, 20
             return
         range_list = re.split('(\[|\]|\(|\)|\,)', self.Range)
         range_list = [r.strip() for r in range_list if r.strip()]
