@@ -2,7 +2,7 @@ import pandas as pd
 import sys, pdb, getopt
 
 from DataNode import *
-
+from utils import topological_sort
 
 class generator():
     def __init__(self, rules):
@@ -10,10 +10,22 @@ class generator():
             self.rules = rules
         else:
             self.rules = self._init_dict(rules)
-        self.nodes = []
+        self.nodes = {}
         self.columns = []
         self._init_nodes()
         self.result = []
+        self.gen_order = self._get_gen_order()
+        self.out_order = self._get_out_order()
+
+    def _get_out_order(self):
+        orders = [(v['OutIdx'], k) for k,v in self.rules.items()]
+        orders.sort()
+        return [o[1] for o in orders]
+
+    def _get_gen_order(self):
+        return topological_sort(self.rules)
+
+
     def _init_dict(self, rules):
         df = pd.read_excel(rules, index_col=0)
         rules_d = {}
@@ -29,6 +41,7 @@ class generator():
             d_tmp['Logic']   = set(d_logic.split(',')) if d_logic != 'nan' else ''
             d_tmp['Rules']   = d_rules if d_rules != 'nan' else ''
             d_tmp['Pattern'] = d_pattern if d_pattern != 'nan' else ''
+            d_tmp['OutIdx'] = int(df[n]['OutIdx'])
             rules_d[n] = d_tmp
         return rules_d
     def _init_nodes(self):
@@ -42,26 +55,30 @@ class generator():
         }
         for name, attrs in self.rules.items():
             self.columns.append(name)
-            self.nodes.append(nodes_dict[attrs['Type']](name, attrs))
+            # self.nodes.append(nodes_dict[attrs['Type']](name, attrs))
+            self.nodes[name] = nodes_dict[attrs['Type']](name, attrs)
 
     def gen(self, num):
         # result = []
         for i in range(num):
             res = []
             d = {}
-            for name, n in zip(self.columns, self.nodes):
+            for name in self.gen_order:
+            # for name, n in zip(self.columns, self.nodes):
+                n = self.nodes[name]
                 val = n.generate(d)
                 d[name] = val
-                res.append(val)
+            for name in self.out_order:
+                res.append(d[name])
             self.result.append(res)
         # return result
 
     def to_csv(self, file_dir):
-        df = pd.DataFrame(self.result, columns=self.columns)
+        df = pd.DataFrame(self.result, columns=self.out_order)
         df.to_csv(file_dir, index=False)
 
     def to_excel(self, file_dir):
-        df = pd.DataFrame(self.result, columns=self.columns)
+        df = pd.DataFrame(self.result, columns=self.out_order)
         df.to_excel(file_dir, index=False)
 
 
@@ -93,6 +110,7 @@ if __name__ == '__main__':
     num_gen = 100
     
     if len(sys.argv) > 1:
+        # pdb.set_trace()
         opts, args = getopt.getopt(sys.argv[1:], "hi:o:n:",["ifile=","ofile=","gen_num="])
         for opt, arg in opts:
             if opt == '-h':
@@ -106,7 +124,7 @@ if __name__ == '__main__':
                 num_gen = int(arg)
 
     # Define table structure by code
-    g = generator(Columns)
+    # g = generator(Columns)
     # Define table structure by input file
     g = generator(input_file)
     # generate 100 synthetic data
