@@ -232,6 +232,8 @@ class dnode_FLT(dnode):
             else:
                 self.max = float(range_list[-2])
     def _generate_by_logic(self):
+        if self.mode == 'sel':
+            return float(random.choice(self.collection_set))
         if 'ASC' in self.Logic:
             self.min += 1
             return self.min - 1
@@ -269,6 +271,8 @@ class dnode_INT(dnode):
             else:
                 self.max = int(range_list[-2])
     def _generate_by_logic(self):
+        if self.mode == 'sel':
+            return int(random.choice(self.collection_set))
         if 'ASC' in self.Logic:
             self.min += 1
             return self.min - 1

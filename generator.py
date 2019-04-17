@@ -14,8 +14,12 @@ class generator():
         self.columns = []
         self._init_nodes()
         self.result = []
+        # pdb.set_trace()
         self.gen_order = self._get_gen_order()
         self.out_order = self._get_out_order()
+
+    def get_columns(self):
+        return self.rules
 
     def _get_out_order(self):
         orders = [(v['OutIdx'], k) for k,v in self.rules.items()]
@@ -38,7 +42,7 @@ class generator():
             d_pattern = str(df[n]['Pattern'])
             d_tmp['Type']    = d_type if d_type != 'nan' else ''
             d_tmp['Range']   = d_range if d_range != 'nan' else ''
-            d_tmp['Logic']   = set(d_logic.split(',')) if d_logic != 'nan' else ''
+            d_tmp['Logic']   = set(d_logic.split(',')) if d_logic != 'nan' else {'RAND'}
             d_tmp['Rules']   = d_rules if d_rules != 'nan' else ''
             d_tmp['Pattern'] = d_pattern if d_pattern != 'nan' else ''
             d_tmp['OutIdx'] = int(df[n]['OutIdx'])
@@ -64,6 +68,7 @@ class generator():
             res = []
             d = {}
             for name in self.gen_order:
+                # print(name)
             # for name, n in zip(self.columns, self.nodes):
                 n = self.nodes[name]
                 val = n.generate(d)
