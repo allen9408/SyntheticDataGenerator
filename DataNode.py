@@ -70,7 +70,10 @@ class dnode():
     def _generate_by_rule(self, d):
         if self.Type == 'CHAR':
             return parse_rules_str(self.Rules, d)
-        return parse_rules(self.Rules, d)
+        res = parse_rules(self.Rules, d)
+        if self.Pattern:
+            return int(self.Pattern%res) if self.Type == 'INT' else float(self.Pattern%res)
+        return res
 
     def _generate_by_logic(self):
         pass
@@ -244,6 +247,8 @@ class dnode_FLT(dnode):
             return self.max + 1
         if 'RAND' in self.Logic:
             num = random.uniform(self.min, self.max)
+            if self.Pattern:
+                return float(self.Pattern%num)
             return num
 
 class dnode_INT(dnode):

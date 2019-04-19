@@ -55,11 +55,61 @@ class MainUi(QtWidgets.QMainWindow):
         self.main_layout.addWidget(self.left_widget,0,0,12,5) # 左侧部件在第0行第0列，占8行3列
         self.main_layout.addWidget(self.right_widget,0,5,12,5) # 右侧部件在第0行第3列，占8行9列
         self.setCentralWidget(self.main_widget) # 设置窗口主部件
-    # def init_right(self):
+
+
     def left_add_op(self):
-        print('Connect')
-        print(self.left_add.isEnabled())
- 
+        print('add_button trig')
+        '''
+        input_d = {}
+        col_name = self.name_input.text()
+        input_d['Type'] = self._get_type()
+        input_d['Range'] = self.range_input.text()
+        input_d['Logic'] = self._get_logic()
+        input_d['Rules'] = self.rule_input.text()
+        input_d['Pattern'] = self.pattern_input.text()
+        input_d['OutIdx'] = int(self.outidx_input.text())
+        self.g.add_column(col_name, input_d)
+        # print(self.left_add.isEnabled())
+        '''
+
+    def int_click(self, state):
+        type_boxes = [self.type_flt, self.type_str, self.type_dat, self.type_dtm]
+        for cb in type_boxes:
+            cb.setCheckState(QtCore.Qt.Unchecked)
+    def flt_click(self, state):
+        type_boxes = [self.type_int, self.type_str, self.type_dat, self.type_dtm]
+        for cb in type_boxes:
+            cb.setCheckState(QtCore.Qt.Unchecked)
+    def str_click(self, state):
+        type_boxes = [self.type_int, self.type_flt, self.type_dat, self.type_dtm]
+        for cb in type_boxes:
+            cb.setCheckState(QtCore.Qt.Unchecked)
+    def dat_click(self, state):
+        type_boxes = [self.type_int, self.type_flt, self.type_str, self.type_dtm]
+        for cb in type_boxes:
+            cb.setCheckState(QtCore.Qt.Unchecked)
+    def dtm_click(self, state):
+        type_boxes = [self.type_int, self.type_flt, self.type_str, self.type_dat]
+        for cb in type_boxes:
+            cb.setCheckState(QtCore.Qt.Unchecked)
+
+    def asc_click(self, state):
+        if self.logic_asc.isChecked():
+            self.logic_desc.setCheckState(QtCore.Qt.Unchecked)
+            self.logic_rand.setCheckState(QtCore.Qt.Unchecked)
+            self.logic_set.setCheckState(QtCore.Qt.Checked)
+    def desc_click(self, state):
+        if self.logic_desc.isChecked():
+            self.logic_asc.setCheckState(QtCore.Qt.Unchecked)
+            self.logic_rand.setCheckState(QtCore.Qt.Unchecked)
+            self.logic_set.setCheckState(QtCore.Qt.Checked)
+    def rand_click(self, state):
+        if self.logic_rand.isChecked():
+            self.logic_desc.setCheckState(QtCore.Qt.Unchecked)
+            self.logic_asc.setCheckState(QtCore.Qt.Unchecked)
+    def set_click(self, state):
+        pass
+
     def init_left(self):
         self.left_add = QtWidgets.QPushButton("Add") # 关闭按钮
         self.left_reset = QtWidgets.QPushButton("Reset") # 空白按钮
@@ -83,11 +133,18 @@ class MainUi(QtWidgets.QMainWindow):
         self.type_widget = QtWidgets.QWidget()
         self.type_layout = QtWidgets.QGridLayout() 
         self.type_widget.setLayout(self.type_layout)
-        self.type_int = QtWidgets.QPushButton('INT')
-        self.type_flt = QtWidgets.QPushButton('FLOAT')
-        self.type_str = QtWidgets.QPushButton('CHAR')
-        self.type_dat = QtWidgets.QPushButton('DATE')
-        self.type_dtm = QtWidgets.QPushButton('DTTM')
+        self.type_int = QtWidgets.QCheckBox('INT')
+        self.type_flt = QtWidgets.QCheckBox('FLOAT')
+        self.type_str = QtWidgets.QCheckBox('CHAR')
+        self.type_dat = QtWidgets.QCheckBox('DATE')
+        self.type_dtm = QtWidgets.QCheckBox('DTTM')
+
+        self.type_int.clicked.connect(self.int_click)
+        self.type_flt.clicked.connect(self.flt_click)
+        self.type_str.clicked.connect(self.str_click)
+        self.type_dat.clicked.connect(self.dat_click)
+        self.type_dtm.clicked.connect(self.dtm_click)
+        
         self.type_layout.addWidget(self.type_int, 0,0)
         self.type_layout.addWidget(self.type_flt, 0,1)
         self.type_layout.addWidget(self.type_str, 0,2)
@@ -108,15 +165,20 @@ class MainUi(QtWidgets.QMainWindow):
         self.logic_widget = QtWidgets.QWidget()
         self.logic_layout = QtWidgets.QGridLayout() 
         self.logic_widget.setLayout(self.logic_layout)
-        self.logic_asc = QtWidgets.QPushButton('ASC')
-        self.logic_desc = QtWidgets.QPushButton('DESC')
-        self.logic_rand = QtWidgets.QPushButton('RAND')
-        self.logic_set = QtWidgets.QPushButton('SET')
+        self.logic_asc = QtWidgets.QCheckBox('ASC')
+        self.logic_desc = QtWidgets.QCheckBox('DESC')
+        self.logic_rand = QtWidgets.QCheckBox('RAND')
+        self.logic_set = QtWidgets.QCheckBox('DISTINCT')
         self.logic_layout.addWidget(self.logic_asc, 0,0,1,1)
         self.logic_layout.addWidget(self.logic_desc, 0,1,1,1)
         self.logic_layout.addWidget(self.logic_rand, 0,2,1,1)
         self.logic_layout.addWidget(self.logic_set, 0,3,1,1)
         self.left_layout.addWidget(self.logic_widget, 8,0,1,5)
+
+        self.logic_asc.clicked.connect(self.asc_click)
+        self.logic_desc.clicked.connect(self.desc_click)
+        self.logic_rand.clicked.connect(self.rand_click)
+        self.logic_set.clicked.connect(self.set_click)
 
         self.rule_label = QtWidgets.QLabel('Rules: ')
         self.rule_label.setFont(qtawesome.font('fa', 14))
@@ -234,6 +296,12 @@ class MainUi(QtWidgets.QMainWindow):
                 color:white;
                 font-size:20px;
                 font-weight:700;
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            }
+            QCheckBox{
+                color:white;
+                font-size:18px;
+                font-weight:400;
                 font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             }
         ''')
