@@ -2,6 +2,7 @@ from PyQt5 import QtCore,QtGui,QtWidgets
 import sys
 import qtawesome
 from generator import *
+import pdb
  
 class MainUi(QtWidgets.QMainWindow):
     def __init__(self):
@@ -33,6 +34,23 @@ class MainUi(QtWidgets.QMainWindow):
             self.right_table.setItem(row_idx, 5, QtWidgets.QTableWidgetItem(r['Pattern']))
             self.right_table.setItem(row_idx, 6, QtWidgets.QTableWidgetItem(str(r['OutIdx'])))
             row_idx += 1
+    
+    @QtCore.pyqtSlot()
+    def update_table(self, col_name):
+        self.right_table.clear()
+        self.show_table()
+        # column = self.g.get_columns()
+        # row_idx = len(column) - 1
+        # n, r = col_name, column[col_name]
+        # # pdb.set_trace()
+        # print(self.right_table.item(row_idx, 0))
+        # self.right_table.setItem(row_idx, 0, QtWidgets.QTableWidgetItem(n))
+        # self.right_table.setItem(row_idx, 1, QtWidgets.QTableWidgetItem(r['Type']))
+        # self.right_table.setItem(row_idx, 2, QtWidgets.QTableWidgetItem(r['Range']))
+        # self.right_table.setItem(row_idx, 3, QtWidgets.QTableWidgetItem(str(r['Logic'])))
+        # self.right_table.setItem(row_idx, 4, QtWidgets.QTableWidgetItem(r['Rules']))
+        # self.right_table.setItem(row_idx, 5, QtWidgets.QTableWidgetItem(r['Pattern']))
+        # self.right_table.setItem(row_idx, 6, QtWidgets.QTableWidgetItem(str(r['OutIdx'])))
 
 
     def init_ui(self):
@@ -59,7 +77,6 @@ class MainUi(QtWidgets.QMainWindow):
 
     def left_add_op(self):
         print('add_button trig')
-        '''
         input_d = {}
         col_name = self.name_input.text()
         input_d['Type'] = self._get_type()
@@ -68,9 +85,34 @@ class MainUi(QtWidgets.QMainWindow):
         input_d['Rules'] = self.rule_input.text()
         input_d['Pattern'] = self.pattern_input.text()
         input_d['OutIdx'] = int(self.outidx_input.text())
+        # print(input_d)
         self.g.add_column(col_name, input_d)
+        self.update_table(col_name)
         # print(self.left_add.isEnabled())
-        '''
+
+    def _get_type(self):
+        type_ckbox_d = {
+            'INT': self.type_int,
+            'FLOAT': self.type_flt,
+            'CHAR':self.type_str,
+            'DATE':self.type_dat,
+            'DTTM':self.type_dtm
+        }
+        for k, v in type_ckbox_d.items():
+            if v.isChecked():
+                return k
+    def _get_logic(self):
+        res = set()
+        logic_ckbox_d = {
+            'ASC': self.logic_asc,
+            'DESC': self.logic_desc,
+            'RAND': self.logic_rand,
+            'DISTINCT': self.logic_set
+        }
+        for k, v in logic_ckbox_d.items():
+            if v.isChecked():
+                res.add(k)
+        return res
 
     def int_click(self, state):
         type_boxes = [self.type_flt, self.type_str, self.type_dat, self.type_dtm]
@@ -231,6 +273,10 @@ class MainUi(QtWidgets.QMainWindow):
         self.generate_button = QtWidgets.QPushButton("Generate")
         self.right_layout.addWidget(self.process_bar, 11,0,1,4)
         self.right_layout.addWidget(self.generate_button, 11,4,1,1)
+        self.timer = QtCore.QTimer()
+        self.change_flag = True
+        self.timer.timeout.connect(self.show_table)
+        self.timer.start(1000)
     def beauty_main(self):
         self.main_widget.setStyleSheet('''
             QWidget#main_widget{

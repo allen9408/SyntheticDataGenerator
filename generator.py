@@ -21,6 +21,9 @@ class generator():
     def get_columns(self):
         return self.rules
 
+    def add_column(self, name, d):
+        self.rules[name] = d
+
     def _get_out_order(self):
         orders = [(v['OutIdx'], k) for k,v in self.rules.items()]
         orders.sort()
