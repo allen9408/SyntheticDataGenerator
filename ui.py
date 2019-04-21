@@ -7,6 +7,8 @@ import pdb
 class MainUi(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
+        self.input_file = None
+        self.g = generator({})
         self.init_ui()
         self.init_left()
         self.init_right()
@@ -16,16 +18,18 @@ class MainUi(QtWidgets.QMainWindow):
         self.data_columns = [
             [1,2,3,4,5,6],
             [7,8,9,10,11,12]]
-        self.init_generator()
-        self.show_table()
+        # self.init_generator()
+        # self.show_table()
 
     def init_generator(self):
-        self.g = generator('input_example.xlsx')
+        self.g = generator(self.input_file)
 
     def show_table(self):
         column = self.g.get_columns()
+        # print(column)
         row_idx = 0
-        for n, r in column.items():
+        for n in self.g.get_in_order():
+            r = column[n]
             self.right_table.setItem(row_idx, 0, QtWidgets.QTableWidgetItem(n))
             self.right_table.setItem(row_idx, 1, QtWidgets.QTableWidgetItem(r['Type']))
             self.right_table.setItem(row_idx, 2, QtWidgets.QTableWidgetItem(r['Range']))
@@ -34,24 +38,26 @@ class MainUi(QtWidgets.QMainWindow):
             self.right_table.setItem(row_idx, 5, QtWidgets.QTableWidgetItem(r['Pattern']))
             self.right_table.setItem(row_idx, 6, QtWidgets.QTableWidgetItem(str(r['OutIdx'])))
             row_idx += 1
+        self.timer = QtCore.QTimer()
+        self.change_flag = True
+        self.timer.timeout.connect(self.show_table)
+        self.timer.start(500)
+
     
     @QtCore.pyqtSlot()
     def update_table(self, col_name):
-        self.right_table.clear()
-        self.show_table()
-        # column = self.g.get_columns()
-        # row_idx = len(column) - 1
-        # n, r = col_name, column[col_name]
-        # # pdb.set_trace()
-        # print(self.right_table.item(row_idx, 0))
-        # self.right_table.setItem(row_idx, 0, QtWidgets.QTableWidgetItem(n))
-        # self.right_table.setItem(row_idx, 1, QtWidgets.QTableWidgetItem(r['Type']))
-        # self.right_table.setItem(row_idx, 2, QtWidgets.QTableWidgetItem(r['Range']))
-        # self.right_table.setItem(row_idx, 3, QtWidgets.QTableWidgetItem(str(r['Logic'])))
-        # self.right_table.setItem(row_idx, 4, QtWidgets.QTableWidgetItem(r['Rules']))
-        # self.right_table.setItem(row_idx, 5, QtWidgets.QTableWidgetItem(r['Pattern']))
-        # self.right_table.setItem(row_idx, 6, QtWidgets.QTableWidgetItem(str(r['OutIdx'])))
+        cols = self.g.get_columns()
+        row_idx = len(cols) - 1
+        n, r = col_name, cols[col_name]
+        self.right_table.setItem(row_idx, 0, QtWidgets.QTableWidgetItem(n))
+        self.right_table.setItem(row_idx, 1, QtWidgets.QTableWidgetItem(r['Type']))
+        self.right_table.setItem(row_idx, 2, QtWidgets.QTableWidgetItem(r['Range']))
+        self.right_table.setItem(row_idx, 3, QtWidgets.QTableWidgetItem(str(r['Logic'])))
+        self.right_table.setItem(row_idx, 4, QtWidgets.QTableWidgetItem(r['Rules']))
+        self.right_table.setItem(row_idx, 5, QtWidgets.QTableWidgetItem(r['Pattern']))
+        self.right_table.setItem(row_idx, 6, QtWidgets.QTableWidgetItem(str(r['OutIdx'])))
 
+        
 
     def init_ui(self):
         self.setFixedSize(960,700)
@@ -76,7 +82,7 @@ class MainUi(QtWidgets.QMainWindow):
 
 
     def left_add_op(self):
-        print('add_button trig')
+        # print('add_button trig')
         input_d = {}
         col_name = self.name_input.text()
         input_d['Type'] = self._get_type()
@@ -87,8 +93,23 @@ class MainUi(QtWidgets.QMainWindow):
         input_d['OutIdx'] = int(self.outidx_input.text())
         # print(input_d)
         self.g.add_column(col_name, input_d)
-        self.update_table(col_name)
+        self.show_table()
         # print(self.left_add.isEnabled())
+
+    def left_browse_op(self):
+        options = QtWidgets.QFileDialog.Options()
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Choose input excel file", "","All Files (*);;Excel Files (*.xlsx)", options=options)
+        print('browse:', file_name)
+        self.input_file = file_name
+        self.init_generator()
+        self.show_table()
+
+    def generate_op(self):
+        gen_num = int(self.gennum_input.text())
+        for i in range(gen_num):
+            self.g.gen(1)
+            self.process_bar.setValue(int((i+1)/gen_num*100))
+        self.g.to_excel('output_ui.xlsx')
 
     def _get_type(self):
         type_ckbox_d = {
@@ -157,6 +178,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.left_reset = QtWidgets.QPushButton("Reset") # 空白按钮
         self.left_browse = QtWidgets.QPushButton("Browse")  # 最小化按钮
         self.left_add.clicked[bool].connect(self.left_add_op)
+        self.left_browse.clicked[bool].connect(self.left_browse_op)
         # self.left_xxx = QtWidgets.QPushButton(" ")
         self.left_layout.addWidget(self.left_browse, 16, 0,1,1)
         self.left_layout.addWidget(self.left_add, 16, 2,1,1)
@@ -266,17 +288,15 @@ class MainUi(QtWidgets.QMainWindow):
         self.right_layout.addWidget(self.gennum_input, 10,3,1,2)
 
         self.process_bar = QtWidgets.QProgressBar()
-        self.process_bar.setValue(40)
+        self.process_bar.setValue(0)
         self.process_bar.setFixedHeight(5)
         self.process_bar.setTextVisible(False)
 
         self.generate_button = QtWidgets.QPushButton("Generate")
+        self.generate_button.clicked[bool].connect(self.generate_op)
         self.right_layout.addWidget(self.process_bar, 11,0,1,4)
         self.right_layout.addWidget(self.generate_button, 11,4,1,1)
-        self.timer = QtCore.QTimer()
-        self.change_flag = True
-        self.timer.timeout.connect(self.show_table)
-        self.timer.start(1000)
+
     def beauty_main(self):
         self.main_widget.setStyleSheet('''
             QWidget#main_widget{

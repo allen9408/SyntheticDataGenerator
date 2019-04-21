@@ -6,6 +6,7 @@ from utils import topological_sort
 
 class generator():
     def __init__(self, rules):
+        self.input_order = []
         if type(rules) == dict:
             self.rules = rules
         else:
@@ -22,7 +23,15 @@ class generator():
         return self.rules
 
     def add_column(self, name, d):
+        if name not in self.rules:
+            self.input_order.append(name)
+        else:
+            idx = self.input_order.index(name)
+            self.input_order.append((self.input_order.pop(idx)))
         self.rules[name] = d
+
+    def get_in_order(self):
+        return self.input_order
 
     def _get_out_order(self):
         orders = [(v['OutIdx'], k) for k,v in self.rules.items()]
@@ -35,6 +44,7 @@ class generator():
 
     def _init_dict(self, rules):
         df = pd.read_excel(rules, index_col=0)
+        self.input_order = [n for n in df.columns]
         rules_d = {}
         for n in df.columns:
             d_tmp = {}
