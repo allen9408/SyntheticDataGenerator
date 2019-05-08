@@ -1,6 +1,121 @@
 import re
 from collections import defaultdict
 import pdb
+import datetime
+from vertica_python import connect
+import os
+
+def get_rules_from_db(host, user, password, database, schema, table_name):
+    conn_info = {
+        'host': host,
+        'user': user,
+        'password': password,
+        'database': database
+        }
+    print(conn_info)
+    connection = connect(**conn_info)
+    cur = connection.cursor('dict')
+    command = '''select * from v_catalog.columns
+        where table_schema=\'''' + schema + '''\' and table_name=\'''' + table_name + '''\';'''
+    print(command)
+    # pdb.set_trace()
+    cur.execute(command)
+    columns_d = cur.fetchall()
+    connection.close()
+    return parse_rules_db(columns_d)
+
+def upload_to_db(host, user, password, database, schema, table_name):
+    conn_info = {
+        'host': host,
+        'user': user,
+        'password': password,
+        'database': database
+        }
+    connection = connect(**conn_info)
+    cur = connection.cursor('dict')
+    # cwd = os.getcwd()
+    # command =  '''COPY ''' + schema + '''.''' + table_name + ''' FROM LOCAL \'''' + cwd + '''\\output_ui.csv' DELIMITER ',' NULL '';'''     
+    # print(command)
+    # cur.copy(command)
+    # print(cur.fetchall())
+    command =  '''COPY ''' + schema + '''.''' + table_name + ''' FROM STDIN DELIMITER ',' NULL '';'''     
+    with open('output_ui.csv', 'rb') as f:
+        cur.copy(command, f)
+    connection.close()
+    print('Upload complete')
+
+def parse_rules_db(columns_d):
+    result_d = {}
+    for column in columns_d:
+        name = column['column_name']
+        tmp_d = {}
+        tmp_d['OutIdx'] = column['ordinal_position']
+        if column['data_type'] == 'int':
+            tmp_d['Type'] = 'INT'
+            tmp_d['Range'] = '[1, 10000]'
+            if 'nbr' in name.lower() or 'id' in name.lower():
+                tmp_d['Logic'] = {'RAND', "DISTINCT"}
+            else:
+                tmp_d['Logic'] = {'RAND'}
+            tmp_d['Rules'] = ''
+            tmp_d['Pattern'] = ''
+        elif column['data_type'] == 'float':
+            tmp_d['Type'] = 'FLOAT'
+            tmp_d['Range'] = '[1, 1000000]'
+            tmp_d['Logic'] = {'RAND'}
+            tmp_d["Rules"] = ''
+            tmp_d['Pattern'] = '%.2f'
+        elif column['data_type'] == 'date':
+            tmp_d['Type'] = 'DATE'
+            cur_date = datetime.datetime.strftime(datetime.datetime.now(),'%Y/%m/%d')
+            prev_date = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(days=100) ,'%Y/%m/%d')
+            tmp_d['Range'] = '[' + prev_date + ',' + cur_date + ']'
+            tmp_d['Logic'] = {'RAND'}
+            tmp_d['Rules'] = ''
+            tmp_d['Pattern'] = '%Y/%m/%d'
+        else:
+            tmp_d['Type'] = 'CHAR'
+            tmp_d['Range'] = '[8,20]'
+            tmp_d['Logic'] = {'RAND'}
+            tmp_d['Rules'] = ''
+            tmp_d['Pattern'] = ''
+        result_d[name] = tmp_d
+    return result_d
+
+def guess_rules_from_name(name, idx):
+    tmp_d = {}
+    if 'nbr' in name.lower() or 'cnt' in name.lower():
+        tmp_d['Type'] = 'INT'
+        tmp_d['Range'] = '[1, 10000]'
+        tmp_d['Logic'] = {'RAND'}
+        tmp_d["Rules"] = ''
+        tmp_d['Pattern'] = ''
+        tmp_d['OutIdx'] = idx
+    elif 'amt' in name.lower() or 'fee' in name.lower():
+        tmp_d['Type'] = 'FLOAT'
+        tmp_d['Range'] = '[1, 1000000]'
+        tmp_d['Logic'] = {'RAND'}
+        tmp_d["Rules"] = ''
+        tmp_d['Pattern'] = '%.2f'
+        tmp_d['OutIdx'] = idx
+    elif 'dat' in name.lower():
+        tmp_d['Type'] = 'DATE'
+        cur_date = datetime.datetime.strftime(datetime.datetime.now(),'%Y/%m/%d')
+        prev_date = datetime.datetime.strftime(datetime.datetime.now() - datetime.timedelta(days=100) ,'%Y/%m/%d')
+        tmp_d['Range'] = '[' + prev_date + ',' + cur_date + ']'
+        tmp_d['Logic'] = {'RAND'}
+        tmp_d['Rules'] = ''
+        tmp_d['Pattern'] = '%Y/%m/%d'
+        tmp_d['OutIdx'] = idx
+    else:
+        tmp_d['Type'] = 'CHAR'
+        tmp_d['Range'] = '[8,20]'
+        tmp_d['Logic'] = {'RAND'}
+        tmp_d['Rules'] = ''
+        tmp_d['Pattern'] = ''
+        tmp_d['OutIdx'] = idx
+    return tmp_d
+
 
 def calculate(l, op, d):
     elements = []

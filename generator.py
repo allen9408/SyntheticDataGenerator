@@ -2,13 +2,14 @@ import pandas as pd
 import sys, pdb, getopt
 
 from DataNode import *
-from utils import topological_sort
+from utils import topological_sort, guess_rules_from_name, upload_to_db
 
 class generator():
     def __init__(self, rules):
         self.input_order = []
         if type(rules) == dict:
             self.rules = rules
+            self.input_order = list(rules.keys())
         else:
             self.rules = self._init_dict(rules)
         self.nodes = {}
@@ -17,7 +18,7 @@ class generator():
         self.result = []
         # pdb.set_trace()
         self.gen_order = self._get_gen_order()
-        self.out_order = self._get_out_order()
+        self.out_order = self.get_out_order()
 
     def get_columns(self):
         return self.rules
@@ -29,11 +30,12 @@ class generator():
             idx = self.input_order.index(name)
             self.input_order.append((self.input_order.pop(idx)))
         self.rules[name] = d
+        self._init_nodes()
 
     def get_in_order(self):
         return self.input_order
 
-    def _get_out_order(self):
+    def get_out_order(self):
         orders = [(v['OutIdx'], k) for k,v in self.rules.items()]
         orders.sort()
         return [o[1] for o in orders]
@@ -46,20 +48,24 @@ class generator():
         df = pd.read_excel(rules, index_col=0)
         self.input_order = [n for n in df.columns]
         rules_d = {}
-        for n in df.columns:
+        for i, n in enumerate(df.columns):
             d_tmp = {}
             d_type    = str(df[n]['Type'])
             d_range   = str(df[n]['Range'])
             d_logic   = str(df[n]['Logic'])
             d_rules   = str(df[n]['Rules'])
             d_pattern = str(df[n]['Pattern'])
-            d_tmp['Type']    = d_type if d_type != 'nan' else ''
-            d_tmp['Range']   = d_range if d_range != 'nan' else ''
-            d_tmp['Logic']   = set(d_logic.split(',')) if d_logic != 'nan' else {'RAND'}
-            d_tmp['Rules']   = d_rules if d_rules != 'nan' else ''
-            d_tmp['Pattern'] = d_pattern if d_pattern != 'nan' else ''
-            d_tmp['OutIdx'] = int(df[n]['OutIdx'])
-            rules_d[n] = d_tmp
+            # pdb.set_trace()
+            if d_type == 'nan' and d_range == 'nan' and d_logic == 'nan' and d_rules == 'nan' and d_pattern == 'nan':
+                rules_d[n] = guess_rules_from_name(n, i)
+            else: 
+                d_tmp['Type']    = d_type if d_type != 'nan' else ''
+                d_tmp['Range']   = d_range if d_range != 'nan' else ''
+                d_tmp['Logic']   = set(d_logic.split(',')) if d_logic != 'nan' else {'RAND'}
+                d_tmp['Rules']   = d_rules if d_rules != 'nan' else ''
+                d_tmp['Pattern'] = d_pattern if d_pattern != 'nan' else ''
+                d_tmp['OutIdx'] = int(df[n]['OutIdx'])
+                rules_d[n] = d_tmp
         return rules_d
     def _init_nodes(self):
         nodes_dict = {
@@ -90,6 +96,9 @@ class generator():
                 res.append(d[name])
             self.result.append(res)
         # return result
+
+    def get_config(self, name):
+        return self.rules[name]
 
     def to_csv(self, file_dir):
         df = pd.DataFrame(self.result, columns=self.out_order)

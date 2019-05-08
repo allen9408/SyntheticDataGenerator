@@ -65,6 +65,7 @@ class dnode():
                 if attemp == MAX_RETRY:
                     print('Warning: Column - ', self.name, ' already tried for ', MAX_RETRY, 'times, the column contains duplicate values')
         self.generated_value.add(ret_val)
+        # print(ret_val)
         return ret_val
 
     def _generate_by_rule(self, d):
