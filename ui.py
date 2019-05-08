@@ -4,7 +4,7 @@ import qtawesome
 from generator import *
 import pdb
 from utils import get_rules_from_db
- 
+
 class MainUi(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -62,7 +62,7 @@ class MainUi(QtWidgets.QMainWindow):
             row_idx += 1
 
 
-    
+
     @QtCore.pyqtSlot()
     def update_table(self, col_name):
         cols = self.g.get_columns()
@@ -76,7 +76,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.right_table.setItem(row_idx, 5, QtWidgets.QTableWidgetItem(r['Pattern']))
         self.right_table.setItem(row_idx, 6, QtWidgets.QTableWidgetItem(str(r['OutIdx'])))
 
-        
+
 
     def init_ui(self):
         self.setFixedSize(1024,700)
@@ -99,7 +99,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.right_widget.setObjectName('right_widget')
         self.right_layout = QtWidgets.QGridLayout()
         self.right_widget.setLayout(self.right_layout) # 设置右侧部件布局为网格
- 
+
         self.main_layout.addWidget(self.top_widget, 0,0,3,10)
         self.main_layout.addWidget(self.left_widget,3,0,12,4) # 左侧部件在第0行第0列，占8行3列
         self.main_layout.addWidget(self.right_widget,3,4,12,6) # 右侧部件在第0行第3列，占8行9列
@@ -120,33 +120,43 @@ class MainUi(QtWidgets.QMainWindow):
             # print(input_d)
             self.g.add_column(col_name, input_d)
             self.show_table()
+            self.msg_content.setText('Add Complete')
         except Exception as e:
-            self.msg_content.setText(str(e))
+            self.msg_content.setText('Error:' + str(e))
         # print(self.left_add.isEnabled())
 
     def left_browse_op(self):
-        options = QtWidgets.QFileDialog.Options()
-        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Choose input excel file", "","All Files (*);;Excel Files (*.xlsx)", options=options)
-        print('browse:', file_name)
-        self.input_file = file_name
-        self.init_generator()
-        self.show_table()
+        try:
+            options = QtWidgets.QFileDialog.Options()
+            file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Choose input excel file", "","All Files (*);;Excel Files (*.xlsx)", options=options)
+            print('browse:', file_name)
+            self.input_file = file_name
+            self.init_generator()
+            self.show_table()
+        except Exception as e:
+            self.msg_content.setText('Error: ' + str(e))
 
     def generate_op(self):
-        gen_num = int(self.gennum_input.text())
-        for i in range(gen_num):
-            self.g.gen(1)
-            self.process_bar.setValue(int((i+1)/gen_num*100))
-        self.g.to_csv('output_ui.csv')
+        try:
+            gen_num = int(self.gennum_input.text())
+            for i in range(gen_num):
+                self.g.gen(1)
+                self.process_bar.setValue(int((i+1)/gen_num*100))
+            self.g.to_csv('output_ui.csv')
+        except Exception as e:
+            self.msg_content.setText('Error: ' + str(e))
 
     def upload_op(self):
-        host = self.db_ip_input.text()
-        user = self.db_user_input.text()
-        password = self.db_pswd_input.text()
-        database = self.db_db_input.text()
-        schema = self.tb_sc_input.text()
-        table_name = self.tb_na_input.text()
-        upload_to_db(host, user, password, database, schema, table_name)
+        try:
+            host = self.db_ip_input.text()
+            user = self.db_user_input.text()
+            password = self.db_pswd_input.text()
+            database = self.db_db_input.text()
+            schema = self.tb_sc_input.text()
+            table_name = self.tb_na_input.text()
+            upload_to_db(host, user, password, database, schema, table_name)
+        except Exception as e:
+            self.msg_content.setText('Error: ' + str(e))
 
 
     def _get_type(self):
@@ -212,52 +222,55 @@ class MainUi(QtWidgets.QMainWindow):
         pass
 
     def table_click_op(self):
-        r = self.right_table.currentRow()
-        if not self.right_table.item(r, 0):
-            return
-        name = self.right_table.item(r, 0).text()
-        typ = self.right_table.item(r, 1).text()
-        rang = self.right_table.item(r, 2).text()
-        logic = self.right_table.item(r, 3).text()
-        rule = self.right_table.item(r, 4).text()
-        pattern = self.right_table.item(r, 5).text()
-        outidx = self.right_table.item(r, 6).text()
+        try:
+            r = self.right_table.currentRow()
+            if not self.right_table.item(r, 0):
+                return
+            name = self.right_table.item(r, 0).text()
+            typ = self.right_table.item(r, 1).text()
+            rang = self.right_table.item(r, 2).text()
+            logic = self.right_table.item(r, 3).text()
+            rule = self.right_table.item(r, 4).text()
+            pattern = self.right_table.item(r, 5).text()
+            outidx = self.right_table.item(r, 6).text()
 
-        # set name
-        self.name_input.setText(name)
-        # set type
-        if typ == 'INT':
-            self.type_int.setCheckState(QtCore.Qt.Checked)
-            type_boxes = [self.type_flt, self.type_str, self.type_dat, self.type_dtm]
-        elif typ == 'FLOAT':
-            self.type_flt.setCheckState(QtCore.Qt.Checked)
-            type_boxes = [self.type_int, self.type_str, self.type_dat, self.type_dtm]
-        elif typ == 'CHAR':
-            self.type_str.setCheckState(QtCore.Qt.Checked)
-            type_boxes = [self.type_flt, self.type_int, self.type_dat, self.type_dtm]
-        elif typ == 'DATE':
-            self.type_dat.setCheckState(QtCore.Qt.Checked)
-            type_boxes = [self.type_flt, self.type_str, self.type_int, self.type_dtm]
-        elif typ == 'DTTM':
-            self.type_dtm.setCheckState(QtCore.Qt.Checked)
-            type_boxes = [self.type_flt, self.type_str, self.type_int, self.type_int]
-        for cb in type_boxes:
-            cb.setCheckState(QtCore.Qt.Unchecked)
-        # set range
-        self.range_input.setText(rang)
-        # set logic
-        if 'ASC' in logic:
-            self.logic_asc.setCheckState(QtCore.Qt.Checked)
-        if 'DESC' in logic:
-            self.logic_desc.setCheckState(QtCore.Qt.Checked)
-        if 'RAND' in logic:
-            self.logic_rand.setCheckState(QtCore.Qt.Checked)
-        if 'DISTINCT' in logic:
-            self.logic_set.setCheckState(QtCore.Qt.Checked)
-        # set rules
-        self.rule_input.setText(rule)
-        self.pattern_input.setText(pattern)
-        self.outidx_input.setText(outidx)
+            # set name
+            self.name_input.setText(name)
+            # set type
+            if typ == 'INT':
+                self.type_int.setCheckState(QtCore.Qt.Checked)
+                type_boxes = [self.type_flt, self.type_str, self.type_dat, self.type_dtm]
+            elif typ == 'FLOAT':
+                self.type_flt.setCheckState(QtCore.Qt.Checked)
+                type_boxes = [self.type_int, self.type_str, self.type_dat, self.type_dtm]
+            elif typ == 'CHAR':
+                self.type_str.setCheckState(QtCore.Qt.Checked)
+                type_boxes = [self.type_flt, self.type_int, self.type_dat, self.type_dtm]
+            elif typ == 'DATE':
+                self.type_dat.setCheckState(QtCore.Qt.Checked)
+                type_boxes = [self.type_flt, self.type_str, self.type_int, self.type_dtm]
+            elif typ == 'DTTM':
+                self.type_dtm.setCheckState(QtCore.Qt.Checked)
+                type_boxes = [self.type_flt, self.type_str, self.type_int, self.type_int]
+            for cb in type_boxes:
+                cb.setCheckState(QtCore.Qt.Unchecked)
+            # set range
+            self.range_input.setText(rang)
+            # set logic
+            if 'ASC' in logic:
+                self.logic_asc.setCheckState(QtCore.Qt.Checked)
+            if 'DESC' in logic:
+                self.logic_desc.setCheckState(QtCore.Qt.Checked)
+            if 'RAND' in logic:
+                self.logic_rand.setCheckState(QtCore.Qt.Checked)
+            if 'DISTINCT' in logic:
+                self.logic_set.setCheckState(QtCore.Qt.Checked)
+            # set rules
+            self.rule_input.setText(rule)
+            self.pattern_input.setText(pattern)
+            self.outidx_input.setText(outidx)
+        except Exception as e:
+            self.msg_content.setText('Error: ' + str(e))
 
     def pull_db_op(self):
         try:
@@ -267,15 +280,18 @@ class MainUi(QtWidgets.QMainWindow):
             database = self.db_db_input.text()
             schema = self.tb_sc_input.text()
             table_name = self.tb_na_input.text()
+            self.msg_content.setText('Connecting database ... ')
             rule_d = get_rules_from_db(host, user, password, database, schema, table_name)
+            self.msg_content.setText('Initializing table ...')
             self.g = generator(rule_d)
             self.show_table()
+            self.msg_content.setText('Complete pulling')
         except Exception as e:
-            self.msg_content.setText(str(e))
-        
+            self.msg_content.setText('Error: ' + str(e))
+
     def init_top(self):
         self.db_widget = QtWidgets.QWidget()
-        self.db_layout = QtWidgets.QGridLayout() 
+        self.db_layout = QtWidgets.QGridLayout()
 
         self.db_ip_label = QtWidgets.QLabel('Server: ')
         self.db_ip_label.setFont(qtawesome.font('fa', 12))
@@ -350,7 +366,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.type_label.setFont(qtawesome.font('fa', 14))
         self.left_layout.addWidget(self.type_label,3,0,1,5)
         self.type_widget = QtWidgets.QWidget()
-        self.type_layout = QtWidgets.QGridLayout() 
+        self.type_layout = QtWidgets.QGridLayout()
         self.type_widget.setLayout(self.type_layout)
         self.type_int = QtWidgets.QCheckBox('INT')
         self.type_flt = QtWidgets.QCheckBox('FLOAT')
@@ -363,7 +379,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.type_str.clicked.connect(self.str_click)
         self.type_dat.clicked.connect(self.dat_click)
         self.type_dtm.clicked.connect(self.dtm_click)
-        
+
         self.type_layout.addWidget(self.type_int, 0,0)
         self.type_layout.addWidget(self.type_flt, 0,1)
         self.type_layout.addWidget(self.type_str, 0,2)
@@ -382,7 +398,7 @@ class MainUi(QtWidgets.QMainWindow):
         self.logic_label.setFont(qtawesome.font('fa', 14))
         self.left_layout.addWidget(self.logic_label, 7,0,1,5)
         self.logic_widget = QtWidgets.QWidget()
-        self.logic_layout = QtWidgets.QGridLayout() 
+        self.logic_layout = QtWidgets.QGridLayout()
         self.logic_widget.setLayout(self.logic_layout)
         self.logic_asc = QtWidgets.QCheckBox('ASC')
         self.logic_desc = QtWidgets.QCheckBox('DESC')
@@ -419,12 +435,12 @@ class MainUi(QtWidgets.QMainWindow):
         self.outidx_input.setPlaceholderText('')
         self.left_layout.addWidget(self.outidx_label, 13,0,1,1)
         self.left_layout.addWidget(self.outidx_input, 14,0,1,5)
-    
+
     def init_right(self):
         self.right_table = QtWidgets.QTableWidget()
         self.right_table.setColumnCount(7)
-        self.right_table.setRowCount(200)
-        for i in range(200):
+        self.right_table.setRowCount(500)
+        for i in range(500):
             self.right_table.setRowHeight(i, 50)
         self.right_table.setColumnWidth(1, 60)
         self.right_table.setColumnWidth(2, 200)
@@ -540,7 +556,7 @@ class MainUi(QtWidgets.QMainWindow):
             QLabel{
                 border:none;
                 color:white;
-                font-size:20px;
+                font-size:14px;
                 font-weight:700;
                 font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             }
@@ -603,7 +619,7 @@ class MainUi(QtWidgets.QMainWindow):
             }
             QCheckBox{
                 color:white;
-                font-size:18px;
+                font-size:14px;
                 font-weight:400;
                 font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             }
@@ -660,6 +676,6 @@ def main():
     gui = MainUi()
     gui.show()
     sys.exit(app.exec_())
- 
+
 if __name__ == '__main__':
     main()

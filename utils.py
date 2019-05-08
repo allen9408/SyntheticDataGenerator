@@ -21,8 +21,19 @@ def get_rules_from_db(host, user, password, database, schema, table_name):
     # pdb.set_trace()
     cur.execute(command)
     columns_d = cur.fetchall()
+
+    command = '''select * from ''' + schema + '.' + table_name + ''' LIMIT 1000;'''
+    print(command)
+    cur.execute(command)
+    content_d = cur.fetchall()
+    cols = list(content_d[0].keys())
+    range_d = defaultdict(set)
+    for con in content_d:
+        for c in cols:
+            range_d[c].add(con[c])
+
     connection.close()
-    return parse_rules_db(columns_d)
+    return parse_rules_db(columns_d, range_d, len(content_d))
 
 def upload_to_db(host, user, password, database, schema, table_name):
     conn_info = {
@@ -34,17 +45,17 @@ def upload_to_db(host, user, password, database, schema, table_name):
     connection = connect(**conn_info)
     cur = connection.cursor('dict')
     # cwd = os.getcwd()
-    # command =  '''COPY ''' + schema + '''.''' + table_name + ''' FROM LOCAL \'''' + cwd + '''\\output_ui.csv' DELIMITER ',' NULL '';'''     
+    # command =  '''COPY ''' + schema + '''.''' + table_name + ''' FROM LOCAL \'''' + cwd + '''\\output_ui.csv' DELIMITER ',' NULL '';'''
     # print(command)
     # cur.copy(command)
     # print(cur.fetchall())
-    command =  '''COPY ''' + schema + '''.''' + table_name + ''' FROM STDIN DELIMITER ',' NULL '';'''     
+    command =  '''COPY ''' + schema + '''.''' + table_name + ''' FROM STDIN DELIMITER ',' NULL '';'''
     with open('output_ui.csv', 'rb') as f:
         cur.copy(command, f)
     connection.close()
     print('Upload complete')
 
-def parse_rules_db(columns_d):
+def parse_rules_db(columns_d, range_d, num):
     result_d = {}
     for column in columns_d:
         name = column['column_name']
@@ -75,7 +86,10 @@ def parse_rules_db(columns_d):
             tmp_d['Pattern'] = '%Y/%m/%d'
         else:
             tmp_d['Type'] = 'CHAR'
-            tmp_d['Range'] = '[8,20]'
+            if len(range_d[name]) <= num/10:
+                tmp_d = '{' + ','.join(list(range_d[name])) +'}'
+            else:
+                tmp_d['Range'] = '[8,20]'
             tmp_d['Logic'] = {'RAND'}
             tmp_d['Rules'] = ''
             tmp_d['Pattern'] = ''
@@ -196,7 +210,7 @@ def get_graph(rules):
 def t_sort(graph):
     visited = set()
     post_order = []
-    
+
     def dfs(graph, node):
         if node in visited:
             return
@@ -204,7 +218,7 @@ def t_sort(graph):
         for n in graph[node]:
             dfs(graph, n)
         post_order.append(node)
-    
+
     for n in graph:
         dfs(graph, n)
     return post_order[::-1]
