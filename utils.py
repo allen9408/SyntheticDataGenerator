@@ -30,7 +30,7 @@ def get_rules_from_db(host, user, password, database, schema, table_name):
     range_d = defaultdict(set)
     for con in content_d:
         for c in cols:
-            range_d[c].add(con[c])
+            if con[c]: range_d[c].add(con[c])
 
     connection.close()
     return parse_rules_db(columns_d, range_d, len(content_d))
@@ -56,6 +56,8 @@ def upload_to_db(host, user, password, database, schema, table_name):
     print('Upload complete')
 
 def parse_rules_db(columns_d, range_d, num):
+    print(columns_d)
+    print(range_d)
     result_d = {}
     for column in columns_d:
         name = column['column_name']
@@ -87,13 +89,14 @@ def parse_rules_db(columns_d, range_d, num):
         else:
             tmp_d['Type'] = 'CHAR'
             if len(range_d[name]) <= num/10:
-                tmp_d = '{' + ','.join(list(range_d[name])) +'}'
+                tmp_d['Range'] = '{' + ','.join(list(range_d[name])) +'}'
             else:
                 tmp_d['Range'] = '[8,20]'
             tmp_d['Logic'] = {'RAND'}
             tmp_d['Rules'] = ''
             tmp_d['Pattern'] = ''
         result_d[name] = tmp_d
+    print(result_d)
     return result_d
 
 def guess_rules_from_name(name, idx):
