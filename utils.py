@@ -16,17 +16,19 @@ def get_rules_from_db(host, user, password, database, schema, table_name):
     connection = connect(**conn_info)
     cur = connection.cursor('dict')
     command = '''select * from v_catalog.columns
-        where table_schema=\'''' + schema + '''\' and table_name=\'''' + table_name + '''\';'''
+        where lower(table_schema)=\'''' + schema.lower() + '''\' and lower(table_name)=\'''' + table_name.lower() + '''\';'''
     print(command)
     # pdb.set_trace()
     cur.execute(command)
     columns_d = cur.fetchall()
-
+    # print(columns_d)
+    # return
     command = '''select * from ''' + schema + '.' + table_name + ''' LIMIT 1000;'''
     print(command)
     cur.execute(command)
     content_d = cur.fetchall()
-    cols = list(content_d[0].keys())
+    # print(content_d)
+    cols = [col['column_name'] for col in columns_d]
     range_d = defaultdict(set)
     for con in content_d:
         for c in cols:
@@ -57,7 +59,7 @@ def upload_to_db(host, user, password, database, schema, table_name):
 
 def parse_rules_db(columns_d, range_d, num):
     print(columns_d)
-    print(range_d)
+    # print(range_d)
     result_d = {}
     for column in columns_d:
         name = column['column_name']
@@ -96,7 +98,7 @@ def parse_rules_db(columns_d, range_d, num):
             tmp_d['Rules'] = ''
             tmp_d['Pattern'] = ''
         result_d[name] = tmp_d
-    print(result_d)
+    # print(result_d)
     return result_d
 
 def guess_rules_from_name(name, idx):

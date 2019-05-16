@@ -83,6 +83,7 @@ class generator():
 
     def gen(self, num):
         # result = []
+        self.result = []
         for i in range(num):
             res = []
             d = {}

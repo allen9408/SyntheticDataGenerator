@@ -148,13 +148,15 @@ class MainUi(QtWidgets.QMainWindow):
 
     def upload_op(self):
         try:
-            host = self.db_ip_input.text()
-            user = self.db_user_input.text()
+            self.msg_content.setText('Uploading ... ')
+            host = self.db_ip_input.text().strip()
+            user = self.db_user_input.text().strip()
             password = self.db_pswd_input.text()
-            database = self.db_db_input.text()
-            schema = self.tb_sc_input.text()
-            table_name = self.tb_na_input.text()
+            database = self.db_db_input.text().strip()
+            schema = self.tb_sc_input.text().strip()
+            table_name = self.tb_na_input.text().strip()
             upload_to_db(host, user, password, database, schema, table_name)
+            self.msg_content.setText('Upload successful!')
         except Exception as e:
             self.msg_content.setText('Error: ' + str(e))
 
